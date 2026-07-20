@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>早安看板</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: linear-gradient(160deg, #0f0f1a 0%, #1a1a2e 40%, #16213e 70%, #0f3460 100%);
+      background-attachment: fixed;
+      color: #f5f5f7;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 20px 16px;
+    }
+    #app {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-bottom: 40px;
+    }
+    .card {
+      background: rgba(28, 28, 30, 0.85);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+      border-radius: 20px;
+      padding: 24px 20px;
+      width: 100%;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+    .divider {
+      height: 0.5px;
+      background: rgba(255, 255, 255, 0.08);
+      margin: 16px 0;
+    }
+    .loading {
+      text-align: center;
+      padding: 24px 0;
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 14px;
+    }
+    .error {
+      text-align: center;
+      padding: 24px 0;
+      color: #ff6961;
+      font-size: 14px;
+    }
+    .weather-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .weather-temp {
+      font-size: 48px;
+      font-weight: 250;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+    .weather-icon {
+      font-size: 36px;
+    }
+    .weather-range {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: 2px;
+      font-weight: 400;
+    }
+    .weather-tip {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 0.5px solid rgba(255, 255, 255, 0.08);
+      font-size: 14px;
+      font-weight: 500;
+      color: #a8d8ff;
+    }
+    .weather-weekly {
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .weekly-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 8px 0;
+      width: 80%;
+      border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+    }
+    .weekly-day {
+      width: 44px;
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 500;
+      text-align: center;
+    }
+    .weekly-icon {
+      font-size: 18px;
+      width: 28px;
+      text-align: center;
+    }
+    .weekly-temp {
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 400;
+      min-width: 70px;
+      text-align: center;
+    }
+    .weekly-temp .high {
+      color: #f5f5f7;
+    }
+    .weather-dress {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 0.5px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.45);
+    }
+    .weather-source {
+      margin-top: 8px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.25);
+      text-align: center;
+    }
+    .quote-text {
+      font-size: 18px;
+      line-height: 1.8;
+      text-align: center;
+      font-weight: 400;
+      color: #f5f5f7;
+      letter-spacing: 0.2px;
+      padding: 8px 4px;
+    }
+    .quote-author {
+      text-align: center;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.35);
+      margin-top: 12px;
+      padding-bottom: 4px;
+    }
+    .finance-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .finance-item {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 14px;
+      padding: 14px 12px;
+    }
+    .finance-name {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.5);
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+    .finance-price {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+    .finance-change {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .finance-change.up {
+      background: rgba(255, 69, 58, 0.2);
+      color: #ff6961;
+    }
+    .finance-change.down {
+      background: rgba(48, 209, 88, 0.2);
+      color: #50d878;
+    }
+    .tabs-container {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      margin-bottom: 16px;
+    }
+    .tabs-container::-webkit-scrollbar {
+      display: none;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      white-space: nowrap;
+      padding: 2px 0;
+    }
+    .tab {
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.06);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tab.active {
+      background: #0a84ff;
+      color: #fff;
+    }
+    .news-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .news-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+    .news-rank {
+      min-width: 24px;
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.2);
+      text-align: center;
+    }
+    .news-rank.top3 {
+      color: #ff453a;
+    }
+    .news-title {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #f5f5f7;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="card">
+      <div class="card-title">今日天气</div>
+      <div id="weatherBody"><div class="loading">加载天气中...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">醒脑语录</div>
+      <div id="quoteBody"><div class="loading">加载语录中...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">金融指数</div>
+      <div id="financeBody"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">热点聚合</div>
+      <div id="newsBody"></div>
+    </div>
+  </div>
+  <script>
+    const LAT = 29.718;
+    const LON = 106.63;
+    const WEEKDAY_NAMES = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    const TAB_KEYS = ['weibo', 'zhihu', 'international', 'ai', 'digital'];
+    const TAB_LABELS = {
+      weibo: '微博热搜',
+      zhihu: '知乎热搜',
+      international: '国际新闻',
+      ai: 'AI/IT 资讯',
+      digital: '数码圈'
+    };
+
+    const QUOTES = [
+      { text: '只要你肯努力，没有什么事情是你搞不砸的。', author: '毒鸡汤' },
+      { text: '生活不止眼前的苟且，还有明天的苟且和后天的苟且。', author: '鲁迅（没说过）' },
+      { text: '每天起床第一句，先给自己打个气：又是废物的一天。', author: '网抑云' },
+      { text: '你以为有钱人很快乐吗？他们的快乐你根本想象不到。', author: '毒鸡汤' },
+      { text: '上帝为你关上一扇门，然后就去洗洗睡了。', author: '佚名' },
+      { text: '失败是成功之母，可惜成功六亲不认。', author: '网抑云' },
+      { text: '不要觉得自己一无是处，你至少还有病。', author: '佚名' },
+      { text: '人生就像心电图，一帆风顺你就挂了。', author: '毒鸡汤' },
+    ];
+
+    const FINANCE_MOCK = [
+      { name: '纳斯达克100', price: '19,863.45', change: '+1.26%', up: true },
+      { name: '科创50', price: '987.62', change: '-0.83%', up: false },
+      { name: '中证500', price: '5,423.18', change: '+0.47%', up: true },
+      { name: '上证指数', price: '3,128.54', change: '-0.32%', up: false },
+    ];
+
+    const NEWS_MOCK = {
+      weibo: [
+        { rank: 1, title: '北京暴雨预警升级为红色' },
+        { rank: 2, title: '特斯拉发布全新车型' },
+        { rank: 3, title: '网友热议高考分数线出炉' },
+        { rank: 4, title: '国内油价迎来新一轮调整' },
+        { rank: 5, title: '某知名主播宣布停播' },
+        { rank: 6, title: '全国多地发布高温预警' },
+        { rank: 7, title: '宫寝美学变最新流行风格' },
+        { rank: 8, title: '大学生创业中衣获百万融资' },
+        { rank: 9, title: '星巴克开发全新树黄杏咖啡' },
+        { rank: 10, title: '秧子契弹射突进过百亿流量' },
+      ],
+      zhihu: [
+        { rank: 1, title: '如何看待 2026 年的经济形势？' },
+        { rank: 2, title: '有哪些你以为是常识但其实是错误的知识？' },
+        { rank: 3, title: '月薪 2 万在一线城市是什么体验？' },
+        { rank: 4, title: '如何评价最新发布的旗舰手机？' },
+        { rank: 5, title: '工作中被领导批评了该怎么调整心态？' },
+        { rank: 6, title: '为什么越来越多的人选择远程办公？' },
+        { rank: 7, title: '于和的斓子为什么这么受欢迎？' },
+        { rank: 8, title: '人类什么时候能登上火星？' },
+        { rank: 9, title: '第一份工作去大厂还是小公司？' },
+        { rank: 10, title: '睡眠质量差怎么科学改善？' },
+      ],
+      international: [
+        { rank: 1, title: '联合国气候大会达成新协议' },
+        { rank: 2, title: '美联储宣布加息 25 个基点' },
+        { rank: 3, title: '欧盟通过数字市场法案修正案' },
+        { rank: 4, title: '日本央行维持超宽松货币政策' },
+        { rank: 5, title: '中东局势再度引发关注' },
+        { rank: 6, title: '欧洲多国遭受极端高温袭击' },
+        { rank: 7, title: '美国就业数据低于预期' },
+        { rank: 8, title: '泰国推出新一轮旅游签证豁免…' },
+        { rank: 9, title: '英国政府公布数字英镑计划' },
+        { rank: 10, title: '澳大利亚宣布升级移民政策' },
+      ],
+      ai: [
+        { rank: 1, title: 'GPT-5 发布，多项能力大幅提升' },
+        { rank: 2, title: 'AI 芯片初创公司获 10 亿美元融资' },
+        { rank: 3, title: '开源大模型社区突破 1000 万用户' },
+        { rank: 4, title: 'AI 辅助编程工具全面普及' },
+        { rank: 5, title: '全球 AI 监管框架进入立法阶段' },
+        { rank: 6, title: '软银发布全新码农工具 AI Agent' },
+        { rank: 7, title: '自动驾驶汽车规模化落地加速' },
+        { rank: 8, title: 'AI 医疗终端推出全自动化诊断' },
+        { rank: 9, title: '多模态大模型成为行业标配' },
+        { rank: 10, title: '人工智能专业就业薪资再创新高' },
+      ],
+      digital: [
+        { rank: 1, title: '苹果即将发布新款 MacBook Pro' },
+        { rank: 2, title: '国产折叠屏手机销量创新高' },
+        { rank: 3, title: '索尼发布新一代游戏主机' },
+        { rank: 4, title: '高通发布全新旗舰芯片' },
+        { rank: 5, title: '智能手表市场份额排名出炉' },
+        { rank: 6, title: '超薄笔记本重量突破 800 克' },
+        { rank: 7, title: 'XR 头显生态应用突破百款' },
+        { rank: 8, title: '华为全面回归旗舰手机市场' },
+        { rank: 9, title: '无线充电速率将进入百瓦时代' },
+        { rank: 10, title: '智能穿戴设备继续一年更新餐' },
+      ],
+    };
+
+    const WMO_MAP = {
+      0: { icon: '☀️', text: '晴' },
+      1: { icon: '☀️', text: '晴' },
+      2: { icon: '⛅', text: '多云' },
+      3: { icon: '☁️', text: '阴' },
+      45: { icon: '🌫️', text: '雾' },
+      48: { icon: '🌫️', text: '雾' },
+      51: { icon: '🌦️', text: '毛毛雨' },
+      53: { icon: '🌦️', text: '小雨' },
+      55: { icon: '🌦️', text: '中雨' },
+      61: { icon: '🌧️', text: '小雨' },
+      63: { icon: '🌧️', text: '中雨' },
+      65: { icon: '🌧️', text: '大雨' },
+      80: { icon: '🌧️', text: '阵雨' },
+      81: { icon: '🌧️', text: '中阵雨' },
+      82: { icon: '🌧️', text: '大阵雨' },
+      95: { icon: '⛈️', text: '雷暴' },
+    };
+
+    const RAIN_CODES = [51, 53, 55, 61, 63, 65, 80, 81, 82, 95];
+
+    let activeTab = 'weibo';
+    let state = {
+      weather: null,
+      quote: null,
+      loading: { weather: true, quote: true },
+      error: { weather: false, quote: false },
+    };
+
+    let weatherInitialized = false;
+    let quoteInitialized = false;
+    let financeInitialized = false;
+    let newsInitialized = false;
+
+    function getWeekdayOffset(i) {
+      const today = new Date().getDay();
+      return WEEKDAY_NAMES[(today + i) % 7];
+    }
+
+    function getWMO(code) {
+      return WMO_MAP[code] || { icon: '☀️', text: '晴' };
+    }
+
+    function needUmbrella(code) {
+      return RAIN_CODES.includes(code);
+    }
+
+    function getDressTip(temp) {
+      if (temp >= 35) return '👕 穿衣指数：炎热，建议穿短袖短裤，注意防晒避暑。';
+      if (temp >= 28) return '👕 穿衣指数：偏热，建议穿短袖、短裤/短裙，注意防暑。';
+      if (temp >= 22) return '👕 穿衣指数：舒适，建议穿短袖或薄衬衫。';
+      if (temp >= 16) return '👕 穿衣指数：微凉，建议穿长袖或薄外套。';
+      if (temp >= 10) return '👕 穿衣指数：偏凉，建议穿夹克或毛衣。';
+      return '👕 穿衣指数：寒冷，建议穿羽绒服，注意保暖。';
+    }
+
+    async function fetchWeather() {
+      try {
+        const res = await fetch(
+          'https://api.open-meteo.com/v1/forecast?latitude=' + LAT +
+          '&longitude=' + LON +
+          '&current=temperature_2m,weather_code' +
+          '&daily=temperature_2m_max,temperature_2m_min,weather_code' +
+          '&timezone=Asia%2FShanghai' +
+          '&forecast_days=8'
+        );
+        const d = await res.json();
+        const curr = d.current;
+        const daily = d.daily;
+        const currWmo = getWMO(curr.weather_code);
+        state.weather = {
+          temp: Math.round(curr.temperature_2m),
+          high: Math.round(daily.temperature_2m_max[0]),
+          low: Math.round(daily.temperature_2m_min[0]),
+          icon: currWmo.icon,
+          condition: currWmo.text,
+          needUmbrella: needUmbrella(curr.weather_code),
+          dressTip: getDressTip(Math.round(curr.temperature_2m)),
+          reportTime: curr.time,
+          weekly: [],
+        };
+        for (let i = 1; i <= 7; i++) {
+          const wmo = getWMO(daily.weather_code[i]);
+          state.weather.weekly.push({
+            icon: wmo.icon,
+            high: Math.round(daily.temperature_2m_max[i]),
+            low: Math.round(daily.temperature_2m_min[i]),
+          });
+        }
+        state.loading.weather = false;
+      } catch {
+        state.error.weather = true;
+        state.loading.weather = false;
+      }
+      renderWeather();
+    }
+
+    function fetchQuote() {
+      state.quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+      state.loading.quote = false;
+      renderQuote();
+    }
+
+    function renderWeather() {
+      const container = document.getElementById('weatherBody');
+      if (!container) return;
+      if (state.loading.weather) {
+        container.innerHTML = '<div class="loading">加载天气中...</div>';
+        return;
+      }
+      if (state.error.weather) {
+        container.innerHTML = '<div class="error">天气加载失败</div>';
+        return;
+      }
+      if (!state.weather) return;
+      const w = state.weather;
+      const tip = w.needUmbrella ? '今天要下雨，记得带伞 ☔️' : '今天出门不需要带伞 ✨';
+      const weeklyRows = w.weekly.map((d, i) => `
+        <div class="weekly-row">
+          <span class="weekly-day">${getWeekdayOffset(i + 1)}</span>
+          <span class="weekly-icon">${d.icon}</span>
+          <span class="weekly-temp"><span class="high">${d.high}°</span> / ${d.low}°</span>
+        </div>
+      `).join('');
+      container.innerHTML = `
+        <div class="weather-main">
+          <div>
+            <div class="weather-temp">${w.temp}°</div>
+            <div class="weather-range">${w.low}° - ${w.high}°</div>
+          </div>
+          <div class="weather-icon">${w.icon}</div>
+        </div>
+        <div class="weather-tip">${tip}</div>
+        <div class="divider"></div>
+        <div class="weather-weekly">${weeklyRows}</div>
+        <div class="weather-dress">${w.dressTip}</div>
+        <div class="weather-source">数据来源：Open-Meteo (NOAA) | ${w.reportTime}</div>
+      `;
+    }
+
+    function renderQuote() {
+      const container = document.getElementById('quoteBody');
+      if (!container) return;
+      if (!state.quote) {
+        container.innerHTML = '<div class="loading">加载语录中...</div>';
+        return;
+      }
+      container.innerHTML = `
+        <div class="quote-text">${state.quote.text}</div>
+        <div class="quote-author">— ${state.quote.author}</div>
+      `;
+    }
+
+    function renderFinance() {
+      const container = document.getElementById('financeBody');
+      if (!container) return;
+      container.innerHTML = '<div class="finance-grid">' +
+        FINANCE_MOCK.map(f => `
+          <div class="finance-item">
+            <div class="finance-name">${f.name}</div>
+            <div class="finance-price">${f.price}</div>
+            <span class="finance-change ${f.up ? 'up' : 'down'}">${f.change}</span>
+          </div>
+        `).join('') +
+        '</div>';
+    }
+
+    function renderNews() {
+      const container = document.getElementById('newsBody');
+      if (!container) return;
+      container.innerHTML = `<div class="tabs-container"><div class="tabs" id="tabs">${
+        TAB_KEYS.map(k => `
+          <div class="tab${k === activeTab ? ' active' : ''}" data-tab="${k}">${TAB_LABELS[k]}</div>
+        `).join('')
+      }</div></div><div class="news-list">${
+        NEWS_MOCK[activeTab].map((item, i) => `
+          <div class="news-item">
+            <div class="news-rank${i < 3 ? ' top3' : ''}">${item.rank}</div>
+            <div class="news-title">${item.title}</div>
+          </div>
+        `).join('')
+      }</div>`;
+
+      const tabsEl = document.getElementById('tabs');
+      if (tabsEl && !newsInitialized) {
+        tabsEl.addEventListener('click', (e) => {
+          const tab = e.target.closest('.tab');
+          if (!tab) return;
+          const key = tab.dataset.tab;
+          if (key === activeTab) return;
+          activeTab = key;
+          renderNews();
+        });
+        newsInitialized = true;
+      }
+    }
+
+    fetchWeather();
+    fetchQuote();
+    renderFinance();
+    renderNews();
+  </script>
+</body>
+</html>
