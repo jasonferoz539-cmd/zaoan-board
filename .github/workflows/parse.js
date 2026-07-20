@@ -57,7 +57,9 @@ try {
     rank: i + 1,
     title: item.target?.title || item.title,
   }));
-} catch {
+} catch {}
+
+if (!result.zhihu || result.zhihu.length === 0) {
   result.zhihu = MOCK.zhihu.map((t, i) => ({ rank: i + 1, title: t }));
 }
 
@@ -78,7 +80,7 @@ try {
   }
 } catch {}
 
-if (!result.international) {
+if (!result.international || result.international.length === 0) {
   result.international = MOCK.international.map((t, i) => ({ rank: i + 1, title: t }));
 }
 
