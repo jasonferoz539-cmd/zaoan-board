@@ -538,15 +538,27 @@
         '</div>';
     }
 
+    let pendingNews = null;
+
+    async function loadNews() {
+      try {
+        const res = await fetch('./data/news.json?t=' + Date.now());
+        pendingNews = await res.json();
+      } catch {}
+      renderNews();
+    }
+
     function renderNews() {
       const container = document.getElementById('newsBody');
       if (!container) return;
+      const data = pendingNews || NEWS_MOCK;
+      const list = data[activeTab] || NEWS_MOCK[activeTab];
       container.innerHTML = `<div class="tabs-container"><div class="tabs" id="tabs">${
         TAB_KEYS.map(k => `
           <div class="tab${k === activeTab ? ' active' : ''}" data-tab="${k}">${TAB_LABELS[k]}</div>
         `).join('')
       }</div></div><div class="news-list">${
-        NEWS_MOCK[activeTab].map((item, i) => `
+        list.map((item, i) => `
           <div class="news-item">
             <div class="news-rank${i < 3 ? ' top3' : ''}">${item.rank}</div>
             <div class="news-title">${item.title}</div>
@@ -571,7 +583,7 @@
     fetchWeather();
     fetchQuote();
     renderFinance();
-    renderNews();
+    loadNews();
   </script>
 </body>
 </html>
