@@ -7,55 +7,43 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      - name: 抓取微博热搜
+      - name: 抓取并解析数据
         run: |
           curl -s "https://weibo.com/ajax/side/hotSearch" \
             -H "User-Agent: Mozilla/5.0" \
             -H "Referer: https://weibo.com/" \
             -o weibo_raw.json 2>/dev/null || echo '{"data":{"realtime":[]}}' > weibo_raw.json
 
-      - name: 抓取知乎热搜
-        run: |
           curl -s "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=10" \
             -H "User-Agent: Mozilla/5.0" \
             -H "Referer: https://www.zhihu.com/" \
             -o zhihu_raw.json 2>/dev/null || echo '{"data":[]}' > zhihu_raw.json
 
-      - name: 抓取国际新闻 (RSS)
-        run: |
           curl -sL "https://feeds.bbci.co.uk/news/world/rss.xml" \
             -H "User-Agent: Mozilla/5.0" \
             -o bbc.xml 2>/dev/null || true
 
-      - name: 抓取 AI 资讯 (Hacker News)
-        run: |
           curl -s "https://hacker-news.firebaseio.com/v0/topstories.json" \
             -o hn_ids.json 2>/dev/null || echo '[]' > hn_ids.json
 
-      - name: 抓取数码资讯 (少数派)
-        run: |
           curl -s "https://sspai.com/api/v1/article/tag/page/get?tag=%E5%85%88%E8%A1%8C&limit=10&offset=0" \
             -H "User-Agent: Mozilla/5.0" \
             -o digital_raw.json 2>/dev/null || echo '{"data":[]}' > digital_raw.json
 
-      - name: 解析并合并数据
-        run: node .github/workflows/parse.js
+          node .github/workflows/parse.js
 
-      - name: 提交数据
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git fetch origin main
-          git reset --soft origin/main
-          git add data/news.json
-          git diff --staged --quiet || (git commit -m "chore: 更新热搜数据 $(date +'%Y-%m-%d %H:%M')" && git push origin main)
+      - name: 部署数据到 gh-pages 分支
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./data
+          publish_branch: gh-pages
+          destination_dir: ./
+          keep_files: false

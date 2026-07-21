@@ -542,7 +542,7 @@
 
     async function loadNews() {
       try {
-        const res = await fetch('./data/news.json?t=' + Date.now());
+        const res = await fetch('https://jasonferoz539-cmd.github.io/zaoan-board/news.json?t=' + Date.now());
         pendingNews = await res.json();
       } catch {}
       renderNews();
