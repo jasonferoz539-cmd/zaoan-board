@@ -552,19 +552,19 @@
       const container = document.getElementById('newsBody');
       if (!container) return;
       const data = pendingNews || NEWS_MOCK;
-      const list = data[activeTab] || NEWS_MOCK[activeTab];
-      container.innerHTML = `<div class="tabs-container"><div class="tabs" id="tabs">${
-        TAB_KEYS.map(k => `
-          <div class="tab${k === activeTab ? ' active' : ''}" data-tab="${k}">${TAB_LABELS[k]}</div>
-        `).join('')
-      }</div></div><div class="news-list">${
-        list.map((item, i) => `
-          <div class="news-item">
-            <div class="news-rank${i < 3 ? ' top3' : ''}">${item.rank}</div>
-            <div class="news-title">${item.title}</div>
-          </div>
-        `).join('')
-      }</div>`;
+      let list = data[activeTab];
+      if (!list || list.length === 0) list = NEWS_MOCK[activeTab];
+      const tabsHtml = TAB_KEYS.map(k => {
+        const tabList = (data[k] && data[k].length > 0) ? data[k] : NEWS_MOCK[k];
+        return `<div class="tab${k === activeTab ? ' active' : ''}" data-tab="${k}">${TAB_LABELS[k]}</div>`;
+      }).join('');
+      const newsListHtml = list.map((item, i) => `
+        <div class="news-item">
+          <div class="news-rank${i < 3 ? ' top3' : ''}">${item.rank}</div>
+          <div class="news-title">${item.title}</div>
+        </div>
+      `).join('');
+      container.innerHTML = '<div class="tabs-container"><div class="tabs" id="tabs">' + tabsHtml + '</div></div><div class="news-list">' + newsListHtml + '</div>';
 
       const tabsEl = document.getElementById('tabs');
       if (tabsEl && !newsInitialized) {
