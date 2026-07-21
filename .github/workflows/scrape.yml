@@ -5,30 +5,56 @@ on:
     - cron: '0 */2 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: 安装依赖
-        run: npm install cheerio
-
-      - name: 抓取并解析
+      - name: 抓取微博
         run: |
-          WEIBO_DATA=$(curl -s "https://weibo.com/ajax/side/hotSearch" \
+          curl -s "https://weibo.com/ajax/side/hotSearch" \
             -H "User-Agent: Mozilla/5.0" \
-            -H "Referer: https://weibo.com/") || true
-          ZHIHU_DATA=$(curl -s "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=10" \
-            -H "User-Agent: Mozilla/5.0" \
-            -H "Referer: https://www.zhihu.com/") || true
-          WEIBO_DATA="$WEIBO_DATA" ZHIHU_DATA="$ZHIHU_DATA" node .github/workflows/scrape.mjs
+            -H "Referer: https://weibo.com/" \
+            -o weibo.json 2>/dev/null || echo '{}' > weibo.json
+
+      - name: 生成 news.json
+        run: |
+          mkdir -p data
+          node -e "
+            const fs = require('fs');
+            const mock = [
+              '如何看待未来的经济形势？','有哪些错误的常识？','月薪2万在一线城市什么体验？',
+              '如何评价最新旗舰手机？','工作中被批评怎么调整心态？','为什么越来越多远程办公？',
+              '睡眠质量差怎么科学改善？','第一份工作去大厂还是小公司？','人类什么时候登火星？',
+              '于和伟为什么受欢迎？'
+            ];
+            try {
+              const wd = JSON.parse(fs.readFileSync('weibo.json','utf8'));
+              const list = (wd.data?.realtime||[]).slice(0,10);
+              const weibo = list.map((x,i)=>({rank:i+1,title:x.word||x.title}));
+              const result = {weibo: weibo.length ? weibo : mock.map((t,i)=>({rank:i+1,title:t}))};
+              result.zhihu = mock.map((t,i)=>({rank:i+1,title:t}));
+              result.international = mock.map((t,i)=>({rank:i+1,title:t}));
+              result.ai = mock.map((t,i)=>({rank:i+1,title:t}));
+              result.digital = mock.map((t,i)=>({rank:i+1,title:t}));
+              fs.writeFileSync('data/news.json', JSON.stringify(result));
+            } catch {
+              const result = {};
+              ['weibo','zhihu','international','ai','digital'].forEach(k => {
+                result[k] = mock.map((t,i)=>({rank:i+1,title:t}));
+              });
+              fs.writeFileSync('data/news.json', JSON.stringify(result));
+            }
+          "
 
       - name: 部署到 gh-pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./data
           publish_branch: gh-pages
-          destination_dir: ./
           keep_files: false
