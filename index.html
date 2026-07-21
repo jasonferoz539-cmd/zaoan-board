@@ -555,7 +555,6 @@
       let list = data[activeTab];
       if (!list || list.length === 0) list = NEWS_MOCK[activeTab];
       const tabsHtml = TAB_KEYS.map(k => {
-        const tabList = (data[k] && data[k].length > 0) ? data[k] : NEWS_MOCK[k];
         return `<div class="tab${k === activeTab ? ' active' : ''}" data-tab="${k}">${TAB_LABELS[k]}</div>`;
       }).join('');
       const newsListHtml = list.map((item, i) => `
@@ -565,7 +564,6 @@
         </div>
       `).join('');
       container.innerHTML = '<div class="tabs-container"><div class="tabs" id="tabs">' + tabsHtml + '</div></div><div class="news-list">' + newsListHtml + '</div>';
-
       const tabsEl = document.getElementById('tabs');
       if (tabsEl && !newsInitialized) {
         tabsEl.addEventListener('click', (e) => {
