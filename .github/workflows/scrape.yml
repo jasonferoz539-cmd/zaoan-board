@@ -5,41 +5,26 @@ on:
     - cron: '0 */2 * * *'
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   scrape:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: 抓取并解析数据
+      - name: 安装依赖
+        run: npm install cheerio
+
+      - name: 抓取并解析
         run: |
-          curl -s "https://weibo.com/ajax/side/hotSearch" \
+          WEIBO_DATA=$(curl -s "https://weibo.com/ajax/side/hotSearch" \
             -H "User-Agent: Mozilla/5.0" \
-            -H "Referer: https://weibo.com/" \
-            -o weibo_raw.json 2>/dev/null || echo '{"data":{"realtime":[]}}' > weibo_raw.json
-
-          curl -s "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=10" \
+            -H "Referer: https://weibo.com/") || true
+          ZHIHU_DATA=$(curl -s "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=10" \
             -H "User-Agent: Mozilla/5.0" \
-            -H "Referer: https://www.zhihu.com/" \
-            -o zhihu_raw.json 2>/dev/null || echo '{"data":[]}' > zhihu_raw.json
+            -H "Referer: https://www.zhihu.com/") || true
+          WEIBO_DATA="$WEIBO_DATA" ZHIHU_DATA="$ZHIHU_DATA" node .github/workflows/scrape.mjs
 
-          curl -sL "https://feeds.bbci.co.uk/news/world/rss.xml" \
-            -H "User-Agent: Mozilla/5.0" \
-            -o bbc.xml 2>/dev/null || true
-
-          curl -s "https://hacker-news.firebaseio.com/v0/topstories.json" \
-            -o hn_ids.json 2>/dev/null || echo '[]' > hn_ids.json
-
-          curl -s "https://sspai.com/api/v1/article/tag/page/get?tag=%E5%85%88%E8%A1%8C&limit=10&offset=0" \
-            -H "User-Agent: Mozilla/5.0" \
-            -o digital_raw.json 2>/dev/null || echo '{"data":[]}' > digital_raw.json
-
-          node .github/workflows/parse.js
-
-      - name: 部署数据到 gh-pages 分支
+      - name: 部署到 gh-pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

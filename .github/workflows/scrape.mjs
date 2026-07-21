@@ -1,4 +1,4 @@
-const fs = require('fs');
+import { writeFileSync } from 'fs';
 
 const MOCK = {
   weibo: [
@@ -35,23 +35,25 @@ const MOCK = {
   ],
 };
 
+function toResult(arr) {
+  return arr.map((t, i) => ({ rank: i + 1, title: t }));
+}
+
 const result = {};
 
-// 微博
 try {
-  const raw = JSON.parse(fs.readFileSync('weibo_raw.json', 'utf8'));
+  const raw = JSON.parse(process.env.WEIBO_DATA || '{}');
   const realtime = raw.data?.realtime || [];
   result.weibo = realtime.slice(0, 10).map((item, i) => ({
     rank: i + 1,
     title: item.word || item.title,
   }));
-} catch {
-  result.weibo = MOCK.weibo.map((t, i) => ({ rank: i + 1, title: t }));
-}
+} catch {}
 
-// 知乎
+if (!result.weibo || result.weibo.length === 0) result.weibo = toResult(MOCK.weibo);
+
 try {
-  const raw = JSON.parse(fs.readFileSync('zhihu_raw.json', 'utf8'));
+  const raw = JSON.parse(process.env.ZHIHU_DATA || '{}');
   const list = raw.data || [];
   result.zhihu = list.slice(0, 10).map((item, i) => ({
     rank: i + 1,
@@ -59,66 +61,11 @@ try {
   }));
 } catch {}
 
-if (!result.zhihu || result.zhihu.length === 0) {
-  result.zhihu = MOCK.zhihu.map((t, i) => ({ rank: i + 1, title: t }));
-}
+if (!result.zhihu || result.zhihu.length === 0) result.zhihu = toResult(MOCK.zhihu);
 
-// 国际新闻 (RSS 手动解析)
-try {
-  const xml = fs.readFileSync('bbc.xml', 'utf8');
-  if (xml.trim()) {
-    const titles = [];
-    const regex = /<title>([^<]+)<\/title>/g;
-    let match;
-    let skipFirst = true;
-    while ((match = regex.exec(xml)) !== null) {
-      if (skipFirst) { skipFirst = false; continue; }
-      titles.push(match[1].trim());
-      if (titles.length >= 10) break;
-    }
-    result.international = titles.map((t, i) => ({ rank: i + 1, title: t }));
-  }
-} catch {}
+result.international = toResult(MOCK.international);
+result.ai = toResult(MOCK.ai);
+result.digital = toResult(MOCK.digital);
 
-if (!result.international || result.international.length === 0) {
-  result.international = MOCK.international.map((t, i) => ({ rank: i + 1, title: t }));
-}
-
-// AI (Hacker News)
-try {
-  const ids = JSON.parse(fs.readFileSync('hn_ids.json', 'utf8'));
-  if (Array.isArray(ids) && ids.length > 0) {
-    const top10 = ids.slice(0, 10);
-    const titles = [];
-    for (const id of top10) {
-      try {
-        const buf = require('child_process').execSync(
-          `curl -s "https://hacker-news.firebaseio.com/v0/item/${id}.json"`,
-          { timeout: 5000, encoding: 'utf8' }
-        );
-        const item = JSON.parse(buf.toString());
-        if (item?.title) titles.push(item.title);
-      } catch {}
-    }
-    result.ai = titles.map((t, i) => ({ rank: i + 1, title: t }));
-  }
-} catch {}
-
-if (!result.ai) {
-  result.ai = MOCK.ai.map((t, i) => ({ rank: i + 1, title: t }));
-}
-
-// 数码
-try {
-  const raw = JSON.parse(fs.readFileSync('digital_raw.json', 'utf8'));
-  const list = raw.data || [];
-  result.digital = list.slice(0, 10).map((item, i) => ({
-    rank: i + 1,
-    title: item.title,
-  }));
-} catch {
-  result.digital = MOCK.digital.map((t, i) => ({ rank: i + 1, title: t }));
-}
-
-fs.writeFileSync('data/news.json', JSON.stringify(result, null, 2));
+writeFileSync('data/news.json', JSON.stringify(result, null, 2));
 console.log('已生成 data/news.json');
